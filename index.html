@@ -412,10 +412,10 @@
       <table class="voting-table">
         <thead><tr><th>USP-Kandidat</th><th>Stärke</th><th>Risiko</th><th>Prio</th></tr></thead>
         <tbody>
-          <tr><td>Szenarienfähigkeit (HO + KI)</td><td style="color:#4ade80">Einzigartig</td><td style="color:#fb923c">Spekulativ-Wahrnehmung</td><td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
-          <tr><td>H3-Mikrostandort-Granularität</td><td style="color:#4ade80">Feiner als Markt</td><td style="color:#fb923c">B-/C-Städte-Qualität</td><td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
-          <tr><td>Büro-Spezialisierung</td><td style="color:#4ade80">Fokus vs. Bauchladen</td><td style="color:#fb923c">Kleiner Markt</td><td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
-          <tr><td>Transparenz des Modells</td><td style="color:#4ade80">Vertrauen</td><td style="color:#fb923c">Nachbaubarkeit</td><td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          <tr><td>Szenarienfähigkeit (HO + KI)</td><td style="color:#4ade80">Einzigartig</td><td style="color:#fb923c">Spekulativ-Wahrnehmung</td><td><div class="vote-dots" id="usp-dots-1"></div></td></tr>
+          <tr><td>H3-Mikrostandort-Granularität</td><td style="color:#4ade80">Feiner als Markt</td><td style="color:#fb923c">B-/C-Städte-Qualität</td><td><div class="vote-dots" id="usp-dots-2"></div></td></tr>
+          <tr><td>Büro-Spezialisierung</td><td style="color:#4ade80">Fokus vs. Bauchladen</td><td style="color:#fb923c">Kleiner Markt</td><td><div class="vote-dots" id="usp-dots-3"></div></td></tr>
+          <tr><td>Transparenz des Modells</td><td style="color:#4ade80">Vertrauen</td><td style="color:#fb923c">Nachbaubarkeit</td><td><div class="vote-dots" id="usp-dots-4"></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -523,6 +523,17 @@ setInterval(() => {
   const s = rem%60;
   clockEl.textContent = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 }, 1000);
+
+["usp-dots-1","usp-dots-2","usp-dots-3","usp-dots-4"].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (let i=0;i<12;i++) {
+    const d = document.createElement("div");
+    d.className = "dot";
+    d.onclick = e => { e.stopPropagation(); d.classList.toggle("filled"); };
+    el.appendChild(d);
+  }
+});
 
 document.querySelectorAll(".option").forEach(opt => {
   const dotsEl = opt.querySelector(".dots");
