@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miro Board – Gesellschafter-Workshop</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; overflow-x: hidden; }
+
+  /* TOOLBAR */
+  #toolbar { position: fixed; top: 0; left: 0; right: 0; height: 52px; background: #12122a; border-bottom: 1px solid #2a2a4a; display: flex; align-items: center; padding: 0 16px; gap: 12px; z-index: 100; }
+  #toolbar .logo { font-size: 13px; font-weight: 600; color: #a78bfa; letter-spacing: 0.5px; }
+  #toolbar .sep { width: 1px; height: 24px; background: #2a2a4a; }
+  #toolbar .nav-btn { font-size: 12px; color: #888; background: transparent; border: 1px solid #2a2a4a; border-radius: 6px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+  #toolbar .nav-btn:hover { background: #1e1e3a; color: #a78bfa; }
+  #toolbar .nav-btn.active { background: #2a1a5a; border-color: #6d28d9; color: #c4b5fd; }
+  #toolbar .timer-badge { margin-left: auto; background: #1e1e3a; border: 1px solid #2a2a4a; border-radius: 8px; padding: 4px 12px; font-size: 12px; color: #aaa; display: flex; align-items: center; gap: 6px; }
+  #toolbar .timer-badge span { font-size: 14px; font-weight: 600; color: #a78bfa; font-variant-numeric: tabular-nums; }
+
+  /* BOARD CANVAS */
+  #canvas { margin-top: 52px; padding: 24px; min-height: calc(100vh - 52px); }
+
+  /* SECTION */
+  .section { margin-bottom: 32px; }
+  .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding: 10px 16px; background: #12122a; border-radius: 10px; border-left: 4px solid #6d28d9; }
+  .section-header .block-num { font-size: 11px; font-weight: 600; color: #6d28d9; background: #1e1040; padding: 3px 8px; border-radius: 4px; }
+  .section-header h2 { font-size: 15px; font-weight: 600; color: #e0e0e0; }
+  .section-header .timer { margin-left: auto; font-size: 12px; color: #888; background: #1a1a30; border: 1px solid #2a2a4a; border-radius: 6px; padding: 3px 10px; }
+  .section-header .timer b { color: #a78bfa; }
+
+  /* GRID LAYOUTS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+
+  /* CARD */
+  .card { background: #12122a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 14px; }
+  .card-title { font-size: 12px; font-weight: 600; color: #a78bfa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* DECISION CARD */
+  .decision-card { background: #12122a; border: 1px solid #2a2a4a; border-radius: 10px; padding: 14px; }
+  .decision-card .q-label { font-size: 11px; color: #6d28d9; font-weight: 600; margin-bottom: 6px; }
+  .decision-card .q-title { font-size: 14px; font-weight: 600; color: #e0e0e0; margin-bottom: 14px; line-height: 1.4; }
+  .option { background: #0e0e24; border: 1px solid #2a2a4a; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+  .option:hover { border-color: #6d28d9; background: #1a1040; }
+  .option.selected { border-color: #7c3aed; background: #1e1040; }
+  .option .opt-label { font-size: 11px; font-weight: 700; color: #7c3aed; margin-bottom: 4px; }
+  .option .opt-text { font-size: 12px; color: #bbb; line-height: 1.4; }
+  .option .dots { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
+  .dot { width: 18px; height: 18px; border-radius: 50%; background: #2a2a4a; border: 1.5px solid #3a3a5a; cursor: pointer; transition: all 0.1s; }
+  .dot.filled { background: #7c3aed; border-color: #7c3aed; }
+  .dot:hover { border-color: #a78bfa; }
+
+  /* NOTES AREA */
+  .notes-area { background: #0e1428; border: 1px dashed #2a3a5a; border-radius: 8px; padding: 10px 12px; min-height: 80px; }
+  .notes-area textarea { width: 100%; background: transparent; border: none; outline: none; color: #bbb; font-size: 13px; line-height: 1.6; resize: none; min-height: 60px; font-family: inherit; }
+  .notes-area textarea::placeholder { color: #3a4a6a; }
+  .notes-label { font-size: 10px; color: #3a4a6a; margin-bottom: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* STICKY NOTES */
+  .stickies { display: flex; flex-wrap: wrap; gap: 10px; }
+  .sticky { width: 140px; min-height: 90px; border-radius: 4px; padding: 10px; font-size: 12px; color: #12122a; font-weight: 500; line-height: 1.4; position: relative; cursor: pointer; }
+  .sticky.yellow { background: #fde68a; }
+  .sticky.blue { background: #bfdbfe; }
+  .sticky.green { background: #bbf7d0; }
+  .sticky.pink { background: #fbcfe8; }
+  .sticky.empty { background: transparent; border: 1.5px dashed #2a3a5a; color: #3a4a6a; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .sticky.empty:hover { border-color: #6d28d9; color: #6d28d9; }
+
+  /* VOTING TABLE */
+  .voting-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .voting-table th { text-align: left; padding: 6px 10px; color: #888; font-weight: 500; border-bottom: 1px solid #2a2a4a; font-size: 11px; }
+  .voting-table td { padding: 8px 10px; border-bottom: 1px solid #1a1a30; color: #ccc; vertical-align: middle; }
+  .voting-table td:last-child { text-align: right; }
+  .vote-dots { display: flex; gap: 4px; justify-content: flex-end; }
+
+  /* TIMELINE */
+  .timeline { display: flex; align-items: stretch; gap: 0; }
+  .tl-item { flex: 1; padding: 10px 12px; border-right: 1px solid #2a2a4a; position: relative; }
+  .tl-item:last-child { border-right: none; }
+  .tl-item.current { background: #1a1040; border-top: 2px solid #7c3aed; }
+  .tl-time { font-size: 10px; color: #6d28d9; font-weight: 600; margin-bottom: 4px; }
+  .tl-name { font-size: 12px; color: #e0e0e0; font-weight: 500; margin-bottom: 2px; }
+  .tl-dur { font-size: 11px; color: #666; }
+
+  /* STATUS BADGES */
+  .badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .badge-open { background: #1e3a5f; color: #60a5fa; }
+  .badge-done { background: #14532d; color: #4ade80; }
+  .badge-discuss { background: #451a03; color: #fb923c; }
+
+  /* SEPARATOR */
+  .divider { height: 1px; background: #2a2a4a; margin: 16px 0; }
+
+  /* DECISION LOG */
+  .log-row { display: grid; grid-template-columns: 2fr 3fr 1fr 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid #1a1a30; align-items: start; }
+  .log-row:last-child { border-bottom: none; }
+  .log-q { font-size: 12px; color: #a78bfa; font-weight: 600; }
+  .log-dec { font-size: 12px; color: #ccc; }
+  .log-who { font-size: 11px; color: #888; }
+  .log-status { }
+
+  /* MATRIX */
+  .matrix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .matrix-cell { border: 1px solid #2a2a4a; border-radius: 6px; padding: 8px; font-size: 11px; color: #bbb; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .matrix-cell:hover { border-color: #6d28d9; }
+  .matrix-cell.cat-szenario { background: #1e1040; border-color: #6d28d9; color: #c4b5fd; }
+  .matrix-cell.cat-trend { background: #0e2a1a; border-color: #059669; color: #6ee7b7; }
+  .matrix-cell.cat-score { background: #2a1a00; border-color: #d97706; color: #fcd34d; }
+  .matrix-cell.cat-nein { background: #2a1a1a; border-color: #7f1d1d; color: #fca5a5; }
+  .matrix-cell .m-name { font-weight: 600; margin-bottom: 3px; }
+  .matrix-cell .m-cat { font-size: 10px; opacity: 0.8; }
+
+  /* MULTIPLIER MODEL */
+  .multiplikator { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mult-box { background: #1a1040; border: 1px solid #6d28d9; border-radius: 8px; padding: 10px 14px; text-align: center; flex: 1; min-width: 120px; }
+  .mult-box .m-top { font-size: 11px; color: #888; margin-bottom: 4px; }
+  .mult-box .m-label { font-size: 13px; font-weight: 600; color: #c4b5fd; }
+  .mult-op { font-size: 20px; color: #6d28d9; font-weight: 700; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0e0e1e; } ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <span class="logo">◈ Workshop Board</span>
+  <span class="sep"></span>
+  <button class="nav-btn active" onclick="scrollTo('b1')">B1 Ausgangslage</button>
+  <button class="nav-btn" onclick="scrollTo('b2')">B2 Strategie</button>
+  <button class="nav-btn" onclick="scrollTo('b3')">B3 Nachfrage</button>
+  <button class="nav-btn" onclick="scrollTo('b4')">B4 Szenarien</button>
+  <button class="nav-btn" onclick="scrollTo('b5')">B5 Validierung</button>
+  <button class="nav-btn" onclick="scrollTo('b6')">B6 USP</button>
+  <button class="nav-btn" onclick="scrollTo('b7')">B7 Wrap-up</button>
+  <div class="timer-badge">⏱ Gesamt <span id="clock">2:30:00</span></div>
+</div>
+
+<div id="canvas">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 1 – AUSGANGSLAGE & PRODUKTVISION
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b1">
+  <div class="section-header">
+    <span class="block-num">Block 1</span>
+    <h2>Ausgangslage &amp; Produktvision</h2>
+    <span class="timer"><b>20 min</b> &nbsp;|&nbsp; 0:00 – 0:20</span>
+  </div>
+
+  <div class="grid-2">
+    <!-- Status Quo -->
+    <div class="card">
+      <div class="card-title">Status Quo – Was haben wir bisher?</div>
+      <div class="stickies">
+        <div class="sticky yellow">5 Score-Dimensionen</div>
+        <div class="sticky yellow">34 Indikatoren</div>
+        <div class="sticky yellow">H3-Datenstrategie</div>
+        <div class="sticky yellow">3-Schichten-Zukunftsmodell</div>
+        <div class="sticky empty">+</div>
+      </div>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">Notizen / Ergänzungen</div>
+        <textarea rows="3" placeholder="Kommentare, offene Punkte aus dem Impulsvortrag …"></textarea>
+      </div>
+    </div>
+
+    <!-- Marktkontext -->
+    <div class="card">
+      <div class="card-title">Marktkontext – Warum jetzt?</div>
+      <div class="stickies">
+        <div class="sticky blue">Leerstand steigt in B-Städten</div>
+        <div class="sticky blue">HO-Trend stabilisiert sich</div>
+        <div class="sticky blue">KI-Debatte nimmt Fahrt auf</div>
+        <div class="sticky blue">Banken brauchen bessere Modelle</div>
+        <div class="sticky empty">+</div>
+      </div>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">Fragen aus dem Plenum</div>
+        <textarea rows="3" placeholder="Rückfragen, Ergänzungen zum Marktbild …"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 2 – STRATEGISCHE PRODUKTENTSCHEIDUNGEN
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b2">
+  <div class="section-header">
+    <span class="block-num">Block 2</span>
+    <h2>Strategische Produktentscheidungen</h2>
+    <span class="timer"><b>30 min</b> &nbsp;|&nbsp; 0:20 – 0:50</span>
+  </div>
+
+  <!-- Frage 1: Zielkunde -->
+  <div class="decision-card" style="margin-bottom:12px">
+    <div class="q-label">Frage 1</div>
+    <div class="q-title">Welche Zielgruppe bedienen wir im MVP zuerst?</div>
+    <div class="grid-3">
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option A</div>
+        <div class="opt-text">Kreditgebende Banken — Risikobewertung bei Finanzierung (10-Jahres-Horizont)</div>
+        <div class="dots" id="dots-1a"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option B</div>
+        <div class="opt-text">Projektentwickler — Standortentscheidung vor Ankauf/Entwicklung</div>
+        <div class="dots" id="dots-1b"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option C</div>
+        <div class="opt-text">Dual Launch — gleiche Datenbasis, unterschiedliche Frontends</div>
+        <div class="dots" id="dots-1c"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="notes-area">
+      <div class="notes-label">Entscheidung &amp; Begründung</div>
+      <textarea rows="2" placeholder="Gewählte Option + Begründung hier festhalten …"></textarea>
+    </div>
+  </div>
+
+  <!-- Frage 2: Geografie -->
+  <div class="decision-card" style="margin-bottom:12px">
+    <div class="q-label">Frage 2</div>
+    <div class="q-title">Wie breit starten wir geografisch?</div>
+    <div class="grid-3">
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option A</div>
+        <div class="opt-text">Eine Pilotstadt (z. B. Frankfurt oder München) — schnellster Prototyp</div>
+        <div class="dots" id="dots-2a"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option B</div>
+        <div class="opt-text">Top-7-Städte — deckt ~60 % des Büroflächenumsatzes ab</div>
+        <div class="dots" id="dots-2b"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option C</div>
+        <div class="opt-text">Deutschlandweit ab Start — rasterbasiert, USP „jede Adresse"</div>
+        <div class="dots" id="dots-2c"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="notes-area">
+      <div class="notes-label">Entscheidung &amp; Begründung</div>
+      <textarea rows="2" placeholder="Gewählte Option + Startstädte benennen …"></textarea>
+    </div>
+  </div>
+
+  <!-- Frage 3: Datenquellen -->
+  <div class="decision-card">
+    <div class="q-label">Frage 3</div>
+    <div class="q-title">Welche Rolle spielen kommerzielle Datenquellen im MVP?</div>
+    <div class="grid-3">
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option A</div>
+        <div class="opt-text">Reines Open-Data-MVP — keine laufenden Lizenzkosten</div>
+        <div class="dots" id="dots-3a"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option B</div>
+        <div class="opt-text">Open Data + H3 (lizenzpflichtig) + eine kommerzielle Quelle</div>
+        <div class="dots" id="dots-3b"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option C</div>
+        <div class="opt-text">Full Stack inkl. bulwiengesa/RIWIS + 21st Real Estate</div>
+        <div class="dots" id="dots-3c"></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="grid-2" style="gap:10px;margin-top:8px">
+      <div class="notes-area">
+        <div class="notes-label">Budget-Rahmen (Datenlizenzen)</div>
+        <textarea rows="2" placeholder="Max. Budget p. a. in € …"></textarea>
+      </div>
+      <div class="notes-area">
+        <div class="notes-label">Unverzichtbare Quellen</div>
+        <textarea rows="2" placeholder="Quellen, ohne die kein Go-Live …"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 3 – NACHFRAGETREIBER & WIRKUNGSMODELL
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b3">
+  <div class="section-header">
+    <span class="block-num">Block 3</span>
+    <h2>Nachfragetreiber &amp; Wirkungsmodell</h2>
+    <span class="timer"><b>25 min</b> &nbsp;|&nbsp; 0:50 – 1:15</span>
+  </div>
+
+  <!-- Multiplikator-Modell -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Die 4 Multiplikatoren der Büroflächennachfrage</div>
+    <div class="multiplikator">
+      <div class="mult-box">
+        <div class="m-top">Beschäftigte</div>
+        <div class="m-label">Wie viele Menschen arbeiten hier?</div>
+      </div>
+      <span class="mult-op">×</span>
+      <div class="mult-box">
+        <div class="m-top">Büroaffinität</div>
+        <div class="m-label">Anteil mit Bürobedarf</div>
+      </div>
+      <span class="mult-op">×</span>
+      <div class="mult-box">
+        <div class="m-top">Flächenverbrauch</div>
+        <div class="m-label">m² pro Bürobeschäftigtem</div>
+      </div>
+      <span class="mult-op">×</span>
+      <div class="mult-box">
+        <div class="m-top">Anwesenheitsquote</div>
+        <div class="m-label">Wie oft ist der Platz besetzt?</div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="notes-area">
+      <div class="notes-label">Fehlen Treiber? Ergänzungen aus dem Plenum</div>
+      <textarea rows="3" placeholder="Weitere Multiplikatoren, die wir übersehen haben …"></textarea>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Trenddaten-Ebenen -->
+    <div class="card">
+      <div class="card-title">Trenddaten – Granularität &amp; Horizont</div>
+      <table class="voting-table" style="font-size:11px">
+        <thead><tr>
+          <th>Trend</th><th>Granularität</th><th>Horizont</th><th>Prio</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>H3-Mikrostandort-Dynamik</td><td>~174m Hexagon</td><td>1–3 J.</td>
+            <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          <tr><td>Branchenstrukturwandel</td><td>Gemeinde</td><td>3–7 J.</td>
+            <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          <tr><td>Demografie / Erwerbspersonen</td><td>Kreis</td><td>7–15 J.</td>
+            <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          <tr><td>Konjunktur / Wirtschaftskraft</td><td>Kreis</td><td>Mittel</td>
+            <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          <tr><td>Flächenverbrauch pro Kopf</td><td>National</td><td>Szenario</td>
+            <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          <tr><td>Remote / Anwesenheitsquote</td><td>National</td><td>Szenario</td>
+            <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">Kritischste Datenlücken</div>
+        <textarea rows="2" placeholder="Wo fehlen uns die wichtigsten Daten?"></textarea>
+      </div>
+    </div>
+
+    <!-- Frage 4: Branchendefinition -->
+    <div class="card">
+      <div class="card-title">Frage 4 – Branchendefinition (WZ-Codes)</div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option A – Enger Kern</div>
+        <div class="opt-text">WZ 62–63 (IT), 64–66 (Finanz), 69–70 (Beratung)</div>
+        <div class="dots" id="dots-4a"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option B – Breiter Kern (empfohlen)</div>
+        <div class="opt-text">WZ 62–74, 78, 82, 84 inkl. öff. Verwaltung</div>
+        <div class="dots" id="dots-4b"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option C – Breit + gewichtet</div>
+        <div class="opt-text">Option B + Büroaffinitätsfaktor (0–1) je Branche</div>
+        <div class="dots" id="dots-4c"></div>
+      </div>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">WZ-Codes, die gestrichen / ergänzt werden</div>
+        <textarea rows="2" placeholder="z. B. WZ 84 raus, weil … / WZ 71 rein, weil …"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PAUSE -->
+<div style="background:#0a0a1a; border:1px dashed #2a2a4a; border-radius:10px; padding:14px 20px; margin-bottom:32px; display:flex; align-items:center; gap:16px;">
+  <span style="font-size:20px">☕</span>
+  <div>
+    <div style="font-size:12px; font-weight:600; color:#888;">PAUSE</div>
+    <div style="font-size:13px; color:#666;">10 Minuten &nbsp;|&nbsp; 1:15 – 1:25</div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 4 – SZENARIO-DIMENSIONEN
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b4">
+  <div class="section-header">
+    <span class="block-num">Block 4</span>
+    <h2>Szenario-Dimensionen identifizieren &amp; priorisieren</h2>
+    <span class="timer"><b>30 min</b> &nbsp;|&nbsp; 1:25 – 1:55</span>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-title">Zuordnungs-Matrix — Klicken zum Kategorisieren</div>
+    <div style="display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap;">
+      <span style="font-size:11px; background:#1e1040; color:#c4b5fd; padding:3px 10px; border-radius:4px;">● Szenario-Achse</span>
+      <span style="font-size:11px; background:#0e2a1a; color:#6ee7b7; padding:3px 10px; border-radius:4px;">● Fester Trend</span>
+      <span style="font-size:11px; background:#2a1a00; color:#fcd34d; padding:3px 10px; border-radius:4px;">● Score-Dimension</span>
+      <span style="font-size:11px; background:#2a1a1a; color:#fca5a5; padding:3px 10px; border-radius:4px;">● Nicht relevant</span>
+    </div>
+    <div class="matrix" id="matrix">
+      <!-- cells generated by JS -->
+    </div>
+    <div class="divider"></div>
+    <div class="notes-area">
+      <div class="notes-label">Fehlende Dimensionen — Ergänzungen aus dem Erfahrungshorizont</div>
+      <textarea rows="3" placeholder="Weitere Disruptionskräfte, die wir übersehen haben …"></textarea>
+    </div>
+  </div>
+
+  <!-- Szenario-Achsen Detail -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Szenario-Achse 1 – Home Office</div>
+      <table class="voting-table">
+        <thead><tr><th>Szenario</th><th>Anwesenheitsquote</th><th>Zeithorizont</th></tr></thead>
+        <tbody>
+          <tr><td>Konservativ</td><td>3,5 Tage/Woche</td><td>ab heute</td></tr>
+          <tr><td>Basis</td><td>3,0 Tage/Woche</td><td>2–3 J.</td></tr>
+          <tr><td>Progressiv</td><td>2,0 Tage/Woche</td><td>5–7 J.</td></tr>
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">Anpassungen / Diskussion</div>
+        <textarea rows="2" placeholder="Abweichende Annahmen, branchenspezifische Ausnahmen …"></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Szenario-Achse 2 – KI-Automatisierung</div>
+      <table class="voting-table">
+        <thead><tr><th>Szenario</th><th>Substitutionsrate</th><th>Zeithorizont</th></tr></thead>
+        <tbody>
+          <tr><td>Konservativ</td><td>5 % Bürostellen</td><td>10–15 J.</td></tr>
+          <tr><td>Basis</td><td>15 % Bürostellen</td><td>7–10 J.</td></tr>
+          <tr><td>Progressiv</td><td>30 % Bürostellen</td><td>5–8 J.</td></tr>
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">Anpassungen / Diskussion</div>
+        <textarea rows="2" placeholder="Exponierteste Branchen, regionale Differenzierung …"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 5 – VALIDIERUNG, KOMMUNIKATION & ABGRENZUNG
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b5">
+  <div class="section-header">
+    <span class="block-num">Block 5</span>
+    <h2>Validierung &amp; Score-Kommunikation</h2>
+    <span class="timer"><b>20 min</b> &nbsp;|&nbsp; 1:55 – 2:15</span>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:12px">
+    <!-- Benchmark-Daten -->
+    <div class="decision-card">
+      <div class="q-label">Frage 7a</div>
+      <div class="q-title">Gegen welche Benchmark validieren wir?</div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option A</div>
+        <div class="opt-text">bulwiengesa-Leerstandsquoten (~125 Städte, kostenpflichtig)</div>
+        <div class="dots" id="dots-7a"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option B</div>
+        <div class="opt-text">JLL/CBRE-Marktberichte Top 7 (kostenlos, begrenzte Abdeckung)</div>
+        <div class="dots" id="dots-7b"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option C</div>
+        <div class="opt-text">H3-Worker-Trend als internes Backtesting + Referenzobjekte</div>
+        <div class="dots" id="dots-7c"></div>
+      </div>
+    </div>
+
+    <!-- Score-Darstellung -->
+    <div class="decision-card">
+      <div class="q-label">Frage 7b</div>
+      <div class="q-title">Wie kommunizieren wir den Score?</div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option A – Einzelwert + Konfidenzband</div>
+        <div class="opt-text">„Score: 72 (65–79)" — analog Ratingagenturen</div>
+        <div class="dots" id="dots-7d"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option B – Szenario-Trichter</div>
+        <div class="opt-text">Fan-Chart mit Min/Max/Basis — differenziert, aber erklärungsbedürftig</div>
+        <div class="dots" id="dots-7e"></div>
+      </div>
+      <div class="option" onclick="toggleOption(this)">
+        <div class="opt-label">Option C – Ampel + Zukunftspfeil</div>
+        <div class="opt-text">„Grün heute → Tendenz ↘ gelb in 5J" — einfach, wenig Informationsdichte</div>
+        <div class="dots" id="dots-7f"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Referenzobjekte -->
+  <div class="card">
+    <div class="card-title">Referenzobjekte — Rundabfrage (Bitte: mind. 3 Objekte je Gesellschafter)</div>
+    <table class="voting-table" style="width:100%">
+      <thead><tr>
+        <th>Gesellschafter</th><th>Objekt / Adresse</th><th>Stadt</th><th>Verfügbare Daten</th><th>Status</th>
+      </tr></thead>
+      <tbody id="refobj-table">
+        <tr><td contenteditable="true" style="color:#888">Name</td><td contenteditable="true" style="color:#888">Adresse / Bezeichnung</td><td contenteditable="true" style="color:#888">Stadt</td><td contenteditable="true" style="color:#888">Leerstand / Miete / …</td><td><span class="badge badge-open">Offen</span></td></tr>
+        <tr><td contenteditable="true" style="color:#888">Name</td><td contenteditable="true" style="color:#888">Adresse / Bezeichnung</td><td contenteditable="true" style="color:#888">Stadt</td><td contenteditable="true" style="color:#888">Leerstand / Miete / …</td><td><span class="badge badge-open">Offen</span></td></tr>
+        <tr><td contenteditable="true" style="color:#888">Name</td><td contenteditable="true" style="color:#888">Adresse / Bezeichnung</td><td contenteditable="true" style="color:#888">Stadt</td><td contenteditable="true" style="color:#888">Leerstand / Miete / …</td><td><span class="badge badge-open">Offen</span></td></tr>
+        <tr><td contenteditable="true" style="color:#888">Name</td><td contenteditable="true" style="color:#888">Adresse / Bezeichnung</td><td contenteditable="true" style="color:#888">Stadt</td><td contenteditable="true" style="color:#888">Leerstand / Miete / …</td><td><span class="badge badge-open">Offen</span></td></tr>
+        <tr><td contenteditable="true" style="color:#888">Name</td><td contenteditable="true" style="color:#888">Adresse / Bezeichnung</td><td contenteditable="true" style="color:#888">Stadt</td><td contenteditable="true" style="color:#888">Leerstand / Miete / …</td><td><span class="badge badge-open">Offen</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 6 – USP & WETTBEWERB
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b6">
+  <div class="section-header">
+    <span class="block-num">Block 6</span>
+    <h2>USP &amp; Wettbewerbsabgrenzung</h2>
+    <span class="timer"><b>10 min</b> &nbsp;|&nbsp; 2:15 – 2:25</span>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Blitzlicht — Top-1-USP je Gesellschafter</div>
+      <div class="stickies" id="usp-stickies">
+        <div class="sticky pink" contenteditable="true">Szenarienfähigkeit</div>
+        <div class="sticky pink" contenteditable="true">H3-Mikrostandort</div>
+        <div class="sticky pink" contenteditable="true">Büro-Spezialisierung</div>
+        <div class="sticky pink" contenteditable="true">Transparenz Modell</div>
+        <div class="sticky empty" onclick="addSticky()">+</div>
+      </div>
+      <div class="divider"></div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:12px; color:#888; margin-bottom:8px;">Priorisierung (Punkte vergeben)</div>
+        <table class="voting-table">
+          <thead><tr><th>USP-Kandidat</th><th>Stärke</th><th>Risiko</th><th>Prio-Punkte</th></tr></thead>
+          <tbody>
+            <tr><td>Szenarienfähigkeit (HO + KI)</td><td style="color:#4ade80">Einzigartig</td><td style="color:#fb923c">Spekulativ-Wahrnehmung</td>
+              <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+            <tr><td>H3-Mikrostandort-Granularität</td><td style="color:#4ade80">Feiner als Markt</td><td style="color:#fb923c">B-/C-Städte-Qualität</td>
+              <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+            <tr><td>Büro-Spezialisierung</td><td style="color:#4ade80">Fokus vs. Bauchladen</td><td style="color:#fb923c">Kleiner Markt</td>
+              <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+            <tr><td>Transparenz des Modells</td><td style="color:#4ade80">Vertrauen</td><td style="color:#fb923c">Nachbaubarkeit</td>
+              <td><div class="vote-dots"><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div><div class="dot" onclick="toggleDot(this)"></div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Wettbewerber-Kurzcheck</div>
+      <table class="voting-table">
+        <thead><tr><th>Anbieter</th><th>Stärke</th><th>Schwäche ggü. uns</th></tr></thead>
+        <tbody>
+          <tr><td style="color:#a78bfa">21st Real Estate</td><td>Breite Assetklassen</td><td>Kein Szenariomodell</td></tr>
+          <tr><td style="color:#a78bfa">PriceHubble</td><td>Wohnen sehr stark</td><td>Büro Nebenprodukt</td></tr>
+          <tr><td style="color:#a78bfa">bulwiengesa</td><td>Marktdaten-Gold</td><td>Kein Tool / kein H3</td></tr>
+        </tbody>
+      </table>
+      <div class="divider"></div>
+      <div class="notes-area">
+        <div class="notes-label">Einigung auf 1–2 Differenzierungsmerkmale</div>
+        <textarea rows="3" placeholder="Die Merkmale, mit denen wir nach außen kommunizieren …"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BLOCK 7 – WRAP-UP & DECISION LOG
+════════════════════════════════════════════════════════════════ -->
+<div class="section" id="b7">
+  <div class="section-header">
+    <span class="block-num">Block 7</span>
+    <h2>Wrap-up &amp; Decision Log</h2>
+    <span class="timer"><b>5 min</b> &nbsp;|&nbsp; 2:25 – 2:30</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Decision Log — direkt im Workshop befüllen</div>
+    <div style="display:grid; grid-template-columns:2fr 3fr 1fr 1fr; gap:8px; padding:6px 0 10px; border-bottom:1px solid #2a2a4a; margin-bottom:4px;">
+      <span style="font-size:11px; color:#666; font-weight:600;">Frage</span>
+      <span style="font-size:11px; color:#666; font-weight:600;">Entscheidung + Begründung</span>
+      <span style="font-size:11px; color:#666; font-weight:600;">Verantwortlich</span>
+      <span style="font-size:11px; color:#666; font-weight:600;">Status</span>
+    </div>
+    <div id="decision-log">
+      <div class="log-row"><div class="log-q">F1 – Zielkunde</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F2 – Geografie</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F3 – Datenquellen</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F4 – Branchendefinition</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F5 – Wirkungsmodell</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Konsens / offene Punkte …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F6 – Szenario-Achsen</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F7 – Validierung</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+      <div class="log-row"><div class="log-q">F8 – USP-Fokus</div><div class="log-dec" contenteditable="true" style="min-height:24px; outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Entscheidung eintragen …</div><div class="log-who" contenteditable="true" style="outline:none; border:1px dashed #2a2a4a; border-radius:4px; padding:3px 6px; color:#888">Name</div><div><span class="badge badge-open">Offen</span></div></div>
+    </div>
+    <div class="divider"></div>
+    <div class="grid-2">
+      <div class="notes-area">
+        <div class="notes-label">Offene Punkte / Nächste Schritte</div>
+        <textarea rows="4" placeholder="Was ist nach dem Workshop zu klären? Wer macht was bis wann?"></textarea>
+      </div>
+      <div class="notes-area">
+        <div class="notes-label">Folgetermin</div>
+        <textarea rows="4" placeholder="Datum, Thema, Teilnehmerkreis …"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /canvas -->
+
+<script>
+const candidates = [
+  { name: "Home Office", def: "cat-szenario" },
+  { name: "KI-Automatisierung", def: "cat-szenario" },
+  { name: "ESG / Stranded Assets", def: "cat-score" },
+  { name: "Zinsumfeld", def: "cat-trend" },
+  { name: "Urbanisierung / Dezentralisierung", def: "" },
+  { name: "Arbeitsrecht / 4-Tage-Woche", def: "cat-trend" },
+  { name: "Klimarisiken", def: "cat-score" },
+  { name: "Verkehrswende", def: "cat-trend" }
+];
+const cats = ["cat-szenario", "cat-trend", "cat-score", "cat-nein"];
+const catLabels = { "cat-szenario": "Szenario-Achse", "cat-trend": "Fester Trend", "cat-score": "Score-Dimension", "cat-nein": "Nicht relevant", "": "— offen —" };
+
+const matrix = document.getElementById("matrix");
+candidates.forEach((c, i) => {
+  const div = document.createElement("div");
+  div.className = "matrix-cell " + (c.def || "");
+  div.dataset.state = c.def;
+  div.innerHTML = `<div class="m-name">${c.name}</div><div class="m-cat">${catLabels[c.def]}</div>`;
+  div.onclick = function() {
+    const cur = cats.indexOf(this.dataset.state);
+    const next = cats[(cur + 1) % cats.length];
+    this.dataset.state = next;
+    this.className = "matrix-cell " + next;
+    this.querySelector(".m-cat").textContent = catLabels[next];
+  };
+  matrix.appendChild(div);
+});
+
+function toggleOption(el) {
+  el.classList.toggle("selected");
+}
+function toggleDot(el) {
+  el.classList.toggle("filled");
+}
+
+function scrollTo(id) {
+  document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+}
+
+// Simple elapsed timer
+let secs = 0;
+const clockEl = document.getElementById("clock");
+setInterval(() => {
+  secs++;
+  const total = 150 * 60;
+  const rem = total - secs;
+  if (rem < 0) return;
+  const h = Math.floor(rem / 3600);
+  const m = Math.floor((rem % 3600) / 60);
+  const s = rem % 60;
+  clockEl.textContent = `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}, 1000);
+
+// Dot-voting in decision cards
+document.querySelectorAll(".option").forEach(opt => {
+  const id = opt.querySelector(".dots")?.id;
+  if (!id) return;
+  for (let i = 0; i < 5; i++) {
+    const d = document.createElement("div");
+    d.className = "dot";
+    d.onclick = e => { e.stopPropagation(); d.classList.toggle("filled"); };
+    opt.querySelector(".dots").appendChild(d);
+  }
+});
+</script>
+</body>
+</html>
