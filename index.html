@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" charset="UTF-8">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -129,13 +129,13 @@
 <div id="toolbar">
   <span class="logo">◈ Workshop Board</span>
   <span class="sep"></span>
-  <button class="nav-btn active" onclick="scrollTo('b1')">B1 Ausgangslage</button>
-  <button class="nav-btn" onclick="scrollTo('b2')">B2 Strategie</button>
-  <button class="nav-btn" onclick="scrollTo('b3')">B3 Nachfrage</button>
-  <button class="nav-btn" onclick="scrollTo('b4')">B4 Szenarien</button>
-  <button class="nav-btn" onclick="scrollTo('b5')">B5 Validierung</button>
-  <button class="nav-btn" onclick="scrollTo('b6')">B6 USP</button>
-  <button class="nav-btn" onclick="scrollTo('b7')">B7 Wrap-up</button>
+  <button class="nav-btn active" onclick="goTo('b1', this)">B1 Ausgangslage</button>
+  <button class="nav-btn" onclick="goTo('b2', this)">B2 Strategie</button>
+  <button class="nav-btn" onclick="goTo('b3', this)">B3 Nachfrage</button>
+  <button class="nav-btn" onclick="goTo('b4', this)">B4 Szenarien</button>
+  <button class="nav-btn" onclick="goTo('b5', this)">B5 Validierung</button>
+  <button class="nav-btn" onclick="goTo('b6', this)">B6 USP</button>
+  <button class="nav-btn" onclick="goTo('b7', this)">B7 Wrap-up</button>
   <div class="timer-badge">⏱ Gesamt <span id="clock">2:30:00</span></div>
 </div>
 
@@ -679,10 +679,12 @@ function toggleDot(el) {
   el.classList.toggle("filled");
 }
 
-function scrollTo(id) {
-  document.getElementById(id).scrollIntoView({ behavior: "smooth", block: "start" });
+function goTo(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "start" });
   document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-  event.target.classList.add("active");
+  if (btn) btn.classList.add("active");
 }
 
 // Simple elapsed timer
